@@ -1,60 +1,228 @@
-///////////////////////// Kafka Initial setup///////////////////////////////////////////////
-1->  In server.properties file, change log.dirs path
-#log.dirs=/tmp/kraft-combined-logs (change this path)
+Here’s your documentation rewritten with a **professional GitHub-README look**, clean markdown formatting, syntax highlighting, and emoji icons — perfect for a repository README.md 👇
+
+---
+
+# ⚙️ Kafka Initial Setup (Windows 11 / KRaft Mode)
+
+> 🧠 **Note:** This guide sets up Apache Kafka in **KRaft mode** (no Zookeeper needed).
+> Tested on: **Windows 11 + Kafka 4.0.x + Java 17 / 21 / 22**
+
+---
+
+## 🚀 1. Configure `server.properties`
+
+Open:
+
+```bash
+D:\ApacheKafka\kafka\config\server.properties
+```
+
+Change the log directory path:
+
+```properties
+# Old:
+# log.dirs=/tmp/kraft-combined-logs
+
+# New:
 log.dirs=D:/ApacheKafka/kafka/logs
+```
 
-2-> Create logs folder in kafka installation folder( only if logs folder not available)
+---
+
+## 📁 2. Create Logs Folder
+
+If it doesn’t exist, create:
+
+```
 D:\ApacheKafka\kafka\logs
+```
 
-3-> Write this command in server.properties (set controller.quorum.voters)
+---
+
+## 🗝️ 3. Set Controller Voter
+
+Add this line (below `node.id=1`):
+
+```properties
 controller.quorum.voters=1@localhost:9093
+```
 
-(Note: 1 = node.id and localhost:9093 = controller listener port)
+> ℹ️ **Explanation:**
+>
+> * `1` = node ID
+> * `localhost:9093` = controller listener port
 
-4-> run this command to generate random UUID
+---
+
+## 🔑 4. Generate Cluster UUID
+
+Run this in PowerShell:
+
+```bash
 .\bin\windows\kafka-storage.bat random-uuid
+```
 
-5-> run formate command
+Copy the generated UUID.
+
+---
+
+## 🧹 5. Format Kafka Storage
+
+Replace `<UUID>` with the one you copied:
+
+```bash
 .\bin\windows\kafka-storage.bat format -t <UUID> -c .\config\server.properties --ignore-formatted
+```
 
-6-> run this command to Start Kafka Server in KRaft mode
+---
+
+## 🧩 6. Start Kafka Server (KRaft Mode)
+
+```bash
 .\bin\windows\kafka-server-start.bat .\config\server.properties
+```
 
-///////////////////// Create topic, producer and consumer////////////////////////////////////////
+🎉 You should see:
 
-7-> Create Kafka topic
+```
+INFO Kafka version: 4.0.x
+INFO [KafkaServer id=1] started (kafka.server.KafkaServer)
+```
+
+---
+
+# 💬 Create Topic, Producer & Consumer
+
+## 🧱 7. Create a Kafka Topic
+
+```bash
 .\bin\windows\kafka-topics.bat --create --topic my-topic --bootstrap-server localhost:9092
+```
 
-8-> Create Producer(open new cmd for it)
+---
+
+## ✉️ 8. Start a Producer
+
+*(Open a new CMD window)*
+
+```bash
 .\bin\windows\kafka-console-producer.bat --topic my-topic --bootstrap-server localhost:9092
+```
 
+---
 
-9-> Create consumer(open new cmd for it)
+## 👂 9. Start a Consumer
+
+*(Open another CMD window)*
+
+```bash
 .\bin\windows\kafka-console-consumer.bat --topic my-topic --from-beginning --bootstrap-server localhost:9092
+```
 
+---
 
-////////////Advance Kafka topic management commands in KRaft mode////////////////////////////////////
-10-> Create a kafka topic with some advance configurations
+# ⚡ Advanced Topic Management (KRaft Mode)
+
+## 🧠 10. Create Topic with Advanced Config
+
+```bash
 .\bin\windows\kafka-topics.bat --create --topic my-topic --partitions 1 --replication-factor 1 --bootstrap-server localhost:9092
+```
 
-(//explainations
---partitions = Number of partitions (logical shards), usually between 1-3
---replication-factor = 1 (Keep 1 in KRaft single-node mode))
+**Explanation:**
 
+| Flag                   | Description                                        |
+| ---------------------- | -------------------------------------------------- |
+| `--partitions`         | Number of partitions (logical shards), usually 1–3 |
+| `--replication-factor` | Keep `1` for single-node KRaft setup               |
 
+---
 
-11-> Describe a topic
+## 🔍 11. Describe a Topic
+
+```bash
 .\bin\windows\kafka-topics.bat --describe --topic my-topic --bootstrap-server localhost:9092
+```
 
-12->To see available List Topics
+---
+
+## 📜 12. List All Topics
+
+```bash
 .\bin\windows\kafka-topics.bat --list --bootstrap-server localhost:9092
+```
 
-13-> Delete a topic
+---
+
+## 🗑️ 13. Delete a Topic
+
+```bash
 .\bin\windows\kafka-topics.bat --delete --topic my-topic --bootstrap-server localhost:9092
+```
 
-(to enable this command , add this code in server.properties
-delete.topic.enable=true
-)
+> 🧩 Make sure deletion is enabled in `server.properties`:
+>
+> ```properties
+> delete.topic.enable=true
+> ```
 
-14-> To increate topic partition(we can only increase the topic partition, can't decrease it)
+---
+
+## ➕ 14. Increase Topic Partitions
+
+(You can **only increase**, not decrease.)
+
+```bash
 .\bin\windows\kafka-topics.bat --alter --topic my-topic --partitions 3 --bootstrap-server localhost:9092
+```
+
+---
+
+# 🧰 Bonus Tip: Fix `'wmic' is not recognized'` on Windows 11
+
+If you see this error during Kafka startup:
+
+```
+'wmic' is not recognized as an internal or external command
+```
+
+👉 Open:
+
+```
+D:\ApacheKafka\kafka\bin\windows\kafka-server-start.bat
+```
+
+Find and remove:
+
+```bat
+wmic os get osarchitecture | find /i "32-bit" >nul 2>&1
+IF NOT ERRORLEVEL 1 (
+    rem 32-bit OS
+    set KAFKA_HEAP_OPTS=-Xmx512M -Xms512M
+) ELSE (
+    rem 64-bit OS
+    set KAFKA_HEAP_OPTS=-Xmx1G -Xms1G
+)
+```
+
+Replace with:
+
+```bat
+IF ["%KAFKA_HEAP_OPTS%"] EQU [""] (
+    rem detect OS architecture manually removed for Windows 11
+)
+```
+
+✅ Restart Kafka — the error is gone!
+
+---
+
+### 🧡 Author
+
+**Md. Saddam Hossen**
+Full-Stack Java Developer • Spring Boot + Kafka + WebFlux
+🌐 [github.com/saddamhdev](https://github.com/saddamhdev)
+
+---
+
+Would you like me to add **code-block icons** (🚀, 🧠, ⚡) and a **“Quick Commands Summary” table** at the top for a more polished GitHub README style?
